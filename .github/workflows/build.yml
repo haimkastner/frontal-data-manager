@@ -26,7 +26,6 @@ jobs:
 
       - name: Build 🛠️
         run: |
-          yarn generate
           yarn test
 
   release:
