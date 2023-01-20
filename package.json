@@ -1,6 +1,6 @@
 {
   "name": "frontal-data-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightwight and powerful service for frontend oriented data retrieval & managment. ",
   "scripts": {
     "build": "tsc",
