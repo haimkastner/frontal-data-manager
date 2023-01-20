@@ -39,10 +39,11 @@ jobs:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Prepare dependencies
+      - name: Prepare & Build
         run: |
           npm i -g yarn
           yarn install --frozen-lockfile
+          yarn build
 
       - name: Bomb Version
         id: update_version
