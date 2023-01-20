@@ -1,0 +1,40 @@
+{
+  "name": "frontal-data-manager",
+  "version": "1.0.0",
+  "description": "A lightwight and powerful service for frontend oriented data retrieval & managment. ",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha -r ts-node/register tests/**/*.spec.ts"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "lib": "dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/haimkastner/frontal-data-manager.git"
+  },
+  "homepage": "https://github.com/haimkastner/frontal-data-manager",
+  "author": "Haim Kastner",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.12.62",
+    "chai": "^4.2.0",
+    "mocha": "^8.1.3",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "@types/lodash.clonedeep": "^4.5.7",
+    "@types/react": "^18.0.27",
+    "lodash.clonedeep": "^4.5.0",
+    "react": "^18.2.0",
+    "ts-events": "^3.4.1"
+  },
+  "keywords": []
+}
