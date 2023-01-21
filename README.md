@@ -2,7 +2,7 @@
 
 A lightweight and powerful service for frontend oriented data retrieval & management.
 
-[![Build & Test Status](https://github.com/haimkastner/frontal-data-manager/workflows/frontal-data-manager/badge.svg?branch=main)](https://github.com/haimkastner/frontal-data-manager/actions)
+[![Build & Test Status](https://github.com/haimkastner/frontal-data-manager/workflows/frontal-data-manager/badge.svg?branch=main)](https://github.com/haimkastner/frontal-data-manager/actions) [![Coverage Status](https://coveralls.io/repos/github/haimkastner/frontal-data-manager/badge.svg?branch=main)](https://coveralls.io/github/haimkastner/frontal-data-manager?branch=main)
 
 This package use to simplify feting data once and using it all over application components without a require for complex injection libraries such as MobX, Redux etc.
 
