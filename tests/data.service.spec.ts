@@ -67,6 +67,7 @@ describe('# Data Service Tests', () => {
     it('Should refetch data on force data fetch', async () => {
         const forcedFetchFetchedJoke = await myService.forceFetchData();
         expect(firstFetchedJoke).not.equal(forcedFetchFetchedJoke);
+        expect(myService.data).equal(forcedFetchFetchedJoke);
     });
 
     it('Reset service should reset data to default', async () => {

@@ -42,13 +42,13 @@ class MyService extends DataService<string> { // Set the service Type by the Gen
 export const myService = new MyService();
 
 // Get the date, if it's not fetched yet it will be fetch
-await myService.getData();
+const data = await myService.getData();
 // Force data hard-refresh and return the new value
-await myService.forceFetchData();
+const newData = await myService.forceFetchData();
 // Publish and update a new data
 await myService.postNewData('A new value to set');
 // Add subscriber to the data feed
-await myService.attachDataSubs((value: string) => {
+const dispatcher = myService.attachDataSubs((value: string) => {
 	console.log(`The data is now ${value}`)
 });
 ```
