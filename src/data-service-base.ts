@@ -128,6 +128,8 @@ export abstract class DataService<T> {
         const clonedData = clonedeep(data);
         // Update and publish the new data
         this._data = clonedData;
+        this.fetchFlag = true;
+        this.fetchStartedFlag = true;
         this.dataFeed.post(clonedData);
     }
 
