@@ -4,12 +4,15 @@ A lightweight and powerful service for frontend oriented data retrieval & manage
 
 [![Build & Test Status](https://github.com/haimkastner/frontal-data-manager/workflows/frontal-data-manager/badge.svg?branch=main)](https://github.com/haimkastner/frontal-data-manager/actions) [![Coverage Status](https://coveralls.io/repos/github/haimkastner/frontal-data-manager/badge.svg?branch=main)](https://coveralls.io/github/haimkastner/frontal-data-manager?branch=main)
 
-This package use to simplify feting data once and using it all over application components without a require for complex injection libraries such as MobX, Redux etc.
+This package simplified the process of fetching data once and using it all over the application components without requiring a complex injection library such as MobX, Redux, etc.
 
-Altho it's very lightweight, it's still powerful and gives the ability to update data from one place to all components, clearing cache, forcing re-fetch, and much more.
+Although it's a very lightweight package with a very simple API, it's still powerful and gives the ability for data updating from one place to all application components, which is a very common requirement in every front application implementation.
 
+All this includes the ability for clearing cache, force re-fetch, and much more.
 
-The package as also as a built-in React (v17.0.2) hook for easy to use in React components.
+See below in the example section how easy it is.
+
+The package also has a built-in React (v17.0.2) hook for easy-to-use React components.
 
 ## Install via NPM / Yarn:
 
@@ -53,7 +56,7 @@ const dispatcher = myService.attachDataSubs((value: string) => {
 });
 ```
 
-Once the service is defined, you can use it extremely easy by the data hook, the component loading will trigger data fetch is not fetched yet, and will re-render component each data update with the new value.
+Once the service is defined, you can use it extremely easily by the data hook, the first component loading will trigger data fetch if not been fetched yet, and will re-render the component with each data update from anywhere, with the new value.
  
 ## React 17 Hook Example
 ```typescript

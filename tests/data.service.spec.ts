@@ -48,7 +48,6 @@ export const myFailedService = new MyFailedService();
 describe('# Data Service Tests', () => {
 
     let firstFetchedJoke = '';
-    let forcedFetchFetchedJoke = '';
 
     it('Should be initiated with the provided default value', () => {
         expect(myService.data).equal(DEFAULT_VALUE);
