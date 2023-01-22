@@ -13,21 +13,21 @@ export abstract class DataService<T> {
     protected _data: T;
 
     /** The data event publisher event */
-    private dataFeed = new SyncEvent<T>();
-
-    /** The flag to detect whenever the data already fetched from the API */
-    public fetchFlag = false;
-
-    /** The flag to detect whenever the data started fetched process from the API */
-    public fetchStartedFlag = false;
+    private _dataFeed = new SyncEvent<T>();
 
     // The data that this service will be reset to
-    private defaultData: T;
+    private _defaultData: T;
+
+    /** The flag to detect whenever the data already fetched from the API */
+    private _fetchFlag = false;
+
+    /** The flag to detect whenever the data started fetched process from the API */
+    private _fetchStartedFlag = false;
 
     constructor(defaultData: T = undefined as unknown as T) {
-        this.defaultData = defaultData;
+        this._defaultData = defaultData;
 
-        this._data = clonedeep(this.defaultData);
+        this._data = clonedeep(this._defaultData);
         // Once services created, add it to the services collection
         DataService.dataServicesInstances.push(this);
     }
@@ -37,12 +37,28 @@ export abstract class DataService<T> {
         return this._data;
     }
 
+    /** Get the default data */
+    public get defaultData(): T {
+        // Return a full copy and not the ref, to make sure the default not modified by mistake  
+        return clonedeep(this._defaultData);
+    }
+
+    /** The flag to detect whenever the data already fetched from the API */
+    public get fetchFlag(): boolean {
+        return this._fetchFlag;
+    }
+
+    /** The flag to detect whenever the data started fetched process from the API */
+    public get fetchStartedFlag(): boolean {
+        return this._fetchStartedFlag;
+    }
+
     /** The child required to implement this function, to fetch the data from the API or any other resource */
     protected abstract fetchData(): Promise<T>;
 
     /** Get the date, if it's not fetched yet it will be fetch */
     public async getData(): Promise<T> {
-        if (this.fetchFlag) {
+        if (this._fetchFlag) {
             return this._data;
         }
         return await this.forceFetchData();
@@ -54,22 +70,22 @@ export abstract class DataService<T> {
      */
     public async forceFetchData(): Promise<T> {
         try {
-            this.fetchStartedFlag = true;
+            this._fetchStartedFlag = true;
             // Fetch the data
             const dataResponse = await this.fetchData();
             // Mark the flag as fetched
-            this.fetchFlag = true;
+            this._fetchFlag = true;
             // Keep the data
             this._data = dataResponse;
             // Publish the new data to the subscribers
-            this.dataFeed.post(dataResponse);
+            this._dataFeed.post(dataResponse);
             return dataResponse;
         } catch (error) {
-			// TODO:LOG
+            // TODO:LOG
 
             // Mark flag as false for next time
-            this.fetchFlag = false;
-            this.fetchStartedFlag = false;
+            this._fetchFlag = false;
+            this._fetchStartedFlag = false;
             throw error;
         }
 
@@ -82,12 +98,12 @@ export abstract class DataService<T> {
      */
     public async attachDataSubs(callback: (data: T) => void): Promise<() => void> {
         // Add the callback to the feed event
-        const detacher = this.dataFeed.attach(callback);
+        const detacher = this._dataFeed.attach(callback);
         // Data has been never fetched, do it now, else, just post again the data for the new subscriber
-        if (!this.fetchStartedFlag) {
+        if (!this._fetchStartedFlag) {
             await this.forceFetchData();
-        } else if (this.fetchFlag) {
-            this.dataFeed.post(this._data);
+        } else if (this._fetchFlag) {
+            this._dataFeed.post(this._data);
         }
         return detacher;
     }
@@ -97,7 +113,7 @@ export abstract class DataService<T> {
      */
     public async triggerLoad(): Promise<void> {
         // Data has been never fetched, do it now, else, just post again the data for the new subscriber
-        if (!this.fetchStartedFlag && !this.fetchFlag) {
+        if (!this._fetchStartedFlag && !this._fetchFlag) {
             await this.forceFetchData();
         }
     }
@@ -107,11 +123,11 @@ export abstract class DataService<T> {
      */
     public async awaitToLoad(): Promise<void> {
         return new Promise<void>((res, rej) => {
-            if (this.fetchFlag) {
+            if (this._fetchFlag) {
                 res();
                 return;
             }
-            const detacher = this.dataFeed.attach(() => {
+            const detacher = this._dataFeed.attach(() => {
                 detacher();
                 res();
             });
@@ -128,18 +144,18 @@ export abstract class DataService<T> {
         const clonedData = clonedeep(data);
         // Update and publish the new data
         this._data = clonedData;
-        this.fetchFlag = true;
-        this.fetchStartedFlag = true;
-        this.dataFeed.post(clonedData);
+        this._fetchFlag = true;
+        this._fetchStartedFlag = true;
+        this._dataFeed.post(clonedData);
     }
 
     /**
      * Reset data and state
      */
     public reset() {
-        this._data = clonedeep(this.defaultData);
-        this.fetchFlag = false;
-        this.fetchStartedFlag = false;
+        this._data = clonedeep(this._defaultData);
+        this._fetchFlag = false;
+        this._fetchStartedFlag = false;
     }
 
     /**

@@ -34,17 +34,6 @@ class MySecondService extends DataService<string> { // Set the service Type by t
 }
 export const mySecondService = new MySecondService();
 
-class MyFailedService extends DataService<string> { // Set the service Type by the Generic type on declaration
-    constructor() {
-        super(DEFAULT_VALUE); // Set the service default value
-    }
-
-    async fetchData(): Promise<string> {
-        throw new Error(ERROR_VALUE_TO_THROW); 
-    }
-}
-export const myFailedService = new MyFailedService();
-
 describe('# Data Service Tests', () => {
 
     let firstFetchedJoke = '';
@@ -149,6 +138,15 @@ describe('# Data Service Tests', () => {
     });
 
     it('Failure in the data fetch should be throw and flag to reset', async () => {
+        class MyFailedService extends DataService<string> { // Set the service Type by the Generic type on declaration
+            constructor() {
+                super(DEFAULT_VALUE); // Set the service default value
+            }
+            async fetchData(): Promise<string> {
+                throw new Error(ERROR_VALUE_TO_THROW); 
+            }
+        }
+        const myFailedService = new MyFailedService();
         try {
             await myFailedService.getData();
         } catch (error) {
@@ -156,5 +154,24 @@ describe('# Data Service Tests', () => {
         }
         expect(myFailedService.fetchFlag).equal(false);
         expect(myFailedService.fetchStartedFlag).equal(false);
+    });
+
+    it('Get & Modify default value should not affect service default value', async () => {
+        const defaultValue = {
+            modified: false
+        };
+        class MyService extends DataService<any> { // Set the service Type by the Generic type on declaration
+            constructor() {
+                super(defaultValue); 
+            }
+            async fetchData(): Promise<string> {
+                return '';
+            }
+        }
+        const myService = new MyService();
+        const guttedDefaultValue = myService.defaultData;
+        expect(guttedDefaultValue).deep.equal(defaultValue);
+        guttedDefaultValue.modified = true;
+        expect(guttedDefaultValue).not.deep.equal(defaultValue);
     });
 });
