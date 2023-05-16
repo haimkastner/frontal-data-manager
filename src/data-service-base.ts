@@ -11,8 +11,8 @@ export enum LocalCacheMode {
 const localStorageMemoryMap = {} as any;
 if (!global.localStorage) {
     global.localStorage = {
-        getItem: (key: string) => localStorageMemoryMap[key] ?? null,
-        setItem: (key: string, value: string) => { localStorageMemoryMap[key] = value }
+        getItem: (key: string) => localStorageMemoryMap[`DataService_${key}`] ?? null,
+        setItem: (key: string, value: string) => { localStorageMemoryMap[`DataService_${key}`] = value }
     } as any;
 }
 
@@ -50,6 +50,9 @@ export abstract class DataService<T> {
     /** The flag to detect whenever the data started fetched process from the API */
     private _fetchStartedFlag = false;
 
+    /** The flag to detect whenever the data started fetched process from the API */
+    private _loadFromCache = false;
+
     /** Service options */
     private _dataServiceOptions: DataServiceOptions = {};
 
@@ -73,6 +76,7 @@ export abstract class DataService<T> {
                     this._fetchStartedFlag = true;
                 }
             }
+            this._loadFromCache = true;
         }
 
         // After all calc, set the init value
@@ -81,9 +85,9 @@ export abstract class DataService<T> {
         DataService.dataServicesInstances.push(this);
     }
 
-    /** Get service data AS IS (without triggering anything :) */
+    /** Get a copy of service data AS IS (without triggering anything :) */
     public get data(): T {
-        return this._data;
+        return clonedeep(this._data);
     }
 
     /** Get the default data */
@@ -126,6 +130,7 @@ export abstract class DataService<T> {
             this._fetchFlag = true;
             // Keep the data
             this.setData(dataResponse);
+            this._loadFromCache = false;
             // Publish the new data to the subscribers
             this._dataFeed.post(dataResponse);
             return dataResponse;
@@ -148,11 +153,18 @@ export abstract class DataService<T> {
     public async attachDataSubs(callback: (data: T) => void): Promise<() => void> {
         // Add the callback to the feed event
         const detacher = this._dataFeed.attach(callback);
-        // Data has been never fetched, do it now, else, just post again the data for the new subscriber
-        if (!this._fetchStartedFlag) {
+        
+        if (this._loadFromCache) {
+            // Load in the data in the *background* if not yet triggered
+            if (!this._fetchStartedFlag) {
+                this.forceFetchData();
+            }
+            // And anyway post the current cached data for now
+            this._dataFeed.post(this.data);
+        } else if (!this._fetchStartedFlag) { // Data has been never fetched, do it now, else, just post again the data for the new subscriber
             await this.forceFetchData();
         } else if (this._fetchFlag) {
-            this._dataFeed.post(this._data);
+            this._dataFeed.post(this.data);
         }
         return detacher;
     }
@@ -192,6 +204,7 @@ export abstract class DataService<T> {
         this.setData(data);
         this._fetchFlag = true;
         this._fetchStartedFlag = true;
+        this._loadFromCache = false;
         this._dataFeed.post(clonedeep(data));
     }
 
@@ -202,6 +215,7 @@ export abstract class DataService<T> {
         this.setData(this._defaultData);
         this._fetchFlag = false;
         this._fetchStartedFlag = false;
+        this._loadFromCache = false;
     }
 
     /**

@@ -62,6 +62,16 @@ class MyFullCacheService extends DataService<string> {
 }
 export const myFullCacheService = new MyFullCacheService();
 
+class MyListService extends DataService<any[]> {
+    constructor() {
+        super([]); 
+    }
+    async fetchData(): Promise<any[]> {
+        return ['item1'];
+    }
+}
+export const myListService = new MyListService();
+
 describe('# Data Service Full Cache Tests', () => {
 
     it('Should be initiated with the provided default value without cache', () => {
@@ -116,6 +126,28 @@ describe('# Data Service Boot Cache Tests', () => {
         expect(secondFetchedJoke).not.equal(DEFAULT_VALUE).not.equal(firstFetchedJoke);
         expect(JSON.parse(localStorage.getItem(myBootCacheService.constructor.name) as string)).equal(secondFetchedJoke);
     });
+
+    it('Subscription to data feed should gives the cache and then the new data', (done) => {
+        const anotherFullCacheService = new MyBootCacheService();
+        let callsIndex = 0;
+        const dataBeforeNewFetch = anotherFullCacheService.data;
+        const cacheData = JSON.parse(localStorage.getItem(anotherFullCacheService.constructor.name) as string);
+        anotherFullCacheService.attachDataSubs((value) => {
+            callsIndex++;
+
+            // On first call, it should be the data as is before any new fetch
+            if (callsIndex === 1) {
+                expect(value).equal(cacheData).equal(dataBeforeNewFetch);
+                return;
+            }
+
+            // On the second call, it should be the update call
+            expect(anotherFullCacheService.data).equal(value);
+            // And the value should be diff
+            expect(value).not.equal(cacheData);
+            done();
+        });
+    });
 });
 
 describe('# Data Service Tests', () => {
@@ -145,6 +177,13 @@ describe('# Data Service Tests', () => {
     it('Reset service should reset data to default', async () => {
         myService.reset();
         expect(myService.data).equal(DEFAULT_VALUE);
+    });
+
+    it('Modifying getter service data not reflect in the service', async () => {
+        await myListService.forceFetchData();
+        const dataCopy = myListService.data;
+        dataCopy.push(['item2']);
+        expect(myService.data).not.deep.equal(dataCopy);
     });
 
     it('Post new data should set it for further use', async () => {
