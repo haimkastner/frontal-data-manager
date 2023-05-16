@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { describe } from 'mocha';
-import { DataService } from '../src/data-service-base';
+import { DataService, LocalCacheMode } from '../src/data-service-base';
 import axios from 'axios';
 
 const DEFAULT_VALUE = 'The default value';
@@ -33,6 +33,90 @@ class MySecondService extends DataService<string> { // Set the service Type by t
     }
 }
 export const mySecondService = new MySecondService();
+
+
+class MyBootCacheService extends DataService<string> {
+    constructor() {
+        super(DEFAULT_VALUE, {
+            localCacheMode: LocalCacheMode.BOOT_ONLY
+        });
+    }
+
+    async fetchData(): Promise<string> {
+        const response = await axios.get('https://api.chucknorris.io/jokes/random');
+        return response?.data?.value;
+    }
+}
+export const myBootCacheService = new MyBootCacheService();
+
+class MyFullCacheService extends DataService<string> {
+    constructor() {
+        super(DEFAULT_VALUE, {
+            localCacheMode: LocalCacheMode.FULL
+        }); 
+    }
+    async fetchData(): Promise<string> {
+        const response = await axios.get('https://api.chucknorris.io/jokes/random');
+        return response?.data?.value;
+    }
+}
+export const myFullCacheService = new MyFullCacheService();
+
+describe('# Data Service Full Cache Tests', () => {
+
+    it('Should be initiated with the provided default value without cache', () => {
+        expect(myFullCacheService.data).equal(DEFAULT_VALUE);
+    });
+
+    let firstFetchedJoke = '';
+
+    it('Should be get data and load local cache', async () => {
+        firstFetchedJoke = await myFullCacheService.getData();
+        expect(firstFetchedJoke).not.equal(DEFAULT_VALUE);
+        expect(myFullCacheService.data).equal(firstFetchedJoke);
+        expect(JSON.parse(localStorage.getItem(myFullCacheService.constructor.name) as string)).equal(firstFetchedJoke);
+    });
+
+    it('Should be initiated and mark as ready with the local cache', async () => {
+        const anotherFullCacheService = new MyFullCacheService();
+        const secondFetchedJoke = await anotherFullCacheService.getData();
+        expect(secondFetchedJoke).not.equal(DEFAULT_VALUE);
+        expect(anotherFullCacheService.data).equal(myFullCacheService.data).equal(firstFetchedJoke).equals(secondFetchedJoke);
+    });
+
+    it('Should be initiated regularly is case of broken local cache', async () => {
+        localStorage.setItem(myFullCacheService.constructor.name as string, 'not a valid json at all');
+        const anotherFullCacheService = new MyFullCacheService();
+        const thirdFetchedJoke = await anotherFullCacheService.getData();
+        expect(thirdFetchedJoke).not.equal(DEFAULT_VALUE).not.equal(firstFetchedJoke);
+    });
+});
+
+describe('# Data Service Boot Cache Tests', () => {
+
+    it('Should be initiated with the provided default value without cache', () => {
+        expect(myBootCacheService.data).equal(DEFAULT_VALUE);
+    });
+
+    let firstFetchedJoke = '';
+
+    it('Should be get data and load local cache', async () => {
+        firstFetchedJoke = await myBootCacheService.getData();
+        expect(firstFetchedJoke).not.equal(DEFAULT_VALUE);
+        expect(myBootCacheService.data).equal(firstFetchedJoke);
+        expect(JSON.parse(localStorage.getItem(myBootCacheService.constructor.name) as string)).equal(firstFetchedJoke);
+    });
+
+    it('Should be initiated with cache but mark as not ready yet', async () => {
+        const anotherFullCacheService = new MyBootCacheService();
+        expect(anotherFullCacheService.data).not.equal(DEFAULT_VALUE);
+        expect(anotherFullCacheService.data).equal(firstFetchedJoke);
+    
+        const secondFetchedJoke = await anotherFullCacheService.getData();
+        expect(secondFetchedJoke).not.equal(DEFAULT_VALUE).not.equal(firstFetchedJoke);
+        expect(JSON.parse(localStorage.getItem(myBootCacheService.constructor.name) as string)).equal(secondFetchedJoke);
+    });
+});
 
 describe('# Data Service Tests', () => {
 
@@ -121,10 +205,10 @@ describe('# Data Service Tests', () => {
             callsIndex++;
 
             // On first call, it should be the data as is before any new fetch
-            if (callsIndex === 1) { 
+            if (callsIndex === 1) {
                 expect(myService.data).equal(value);
                 return;
-            } 
+            }
 
             // On the second call, it should be the update call
             expect(myService.data).equal(value);
@@ -143,7 +227,7 @@ describe('# Data Service Tests', () => {
                 super(DEFAULT_VALUE); // Set the service default value
             }
             async fetchData(): Promise<string> {
-                throw new Error(ERROR_VALUE_TO_THROW); 
+                throw new Error(ERROR_VALUE_TO_THROW);
             }
         }
         const myFailedService = new MyFailedService();
@@ -162,7 +246,7 @@ describe('# Data Service Tests', () => {
         };
         class MyService extends DataService<any> { // Set the service Type by the Generic type on declaration
             constructor() {
-                super(defaultValue); 
+                super(defaultValue);
             }
             async fetchData(): Promise<string> {
                 return '';

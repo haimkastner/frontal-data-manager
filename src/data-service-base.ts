@@ -1,6 +1,32 @@
 import { SyncEvent } from 'ts-events';
 import clonedeep from 'lodash.clonedeep';
 
+export enum LocalCacheMode {
+    OFF = 'OFF',
+    FULL = 'FULL',
+    BOOT_ONLY = 'BOOT_ONLY',
+}
+
+// For non-browser env, implement the most simple cache in RAM.
+const localStorageMemoryMap = {} as any;
+if (!global.localStorage) {
+    global.localStorage = {
+        getItem: (key: string) => localStorageMemoryMap[key] ?? null,
+        setItem: (key: string, value: string) => { localStorageMemoryMap[key] = value }
+    } as any;
+}
+
+/**
+ * Data service base options
+ */
+export interface DataServiceOptions {
+    /** 
+     * Local storage mode, default OFF
+     * The cache is common to all instances of a class type inherits from @see DataService
+     */
+    localCacheMode?: LocalCacheMode;
+}
+
 /** Implementation of base class for common data fetch and publish as event logic */
 export abstract class DataService<T> {
 
@@ -10,7 +36,7 @@ export abstract class DataService<T> {
     private static dataServicesInstances: DataService<any>[] = [];
 
     /** The data */
-    protected _data: T;
+    protected _data!: T;
 
     /** The data event publisher event */
     private _dataFeed = new SyncEvent<T>();
@@ -24,10 +50,33 @@ export abstract class DataService<T> {
     /** The flag to detect whenever the data started fetched process from the API */
     private _fetchStartedFlag = false;
 
-    constructor(defaultData: T = undefined as unknown as T) {
+    /** Service options */
+    private _dataServiceOptions: DataServiceOptions = {};
+
+    constructor(defaultData: T = undefined as unknown as T, dataServiceOptions?: DataServiceOptions) {
+
+        // Merge final options default + explicitly
+        this._dataServiceOptions = { localCacheMode: LocalCacheMode.OFF, ...dataServiceOptions };
+
         this._defaultData = defaultData;
 
-        this._data = clonedeep(this._defaultData);
+        // As default boot datas is the default data
+        let bootData = this._defaultData;
+        // Start loading data sequence
+        if (this._dataServiceOptions.localCacheMode !== LocalCacheMode.OFF) {
+            const cachedData = this.loadFromCache();
+            if (cachedData) {
+                bootData = cachedData;
+                if (this._dataServiceOptions.localCacheMode === LocalCacheMode.FULL) {
+                    // If full mode only, mark data as fetched
+                    this._fetchFlag = true;
+                    this._fetchStartedFlag = true;
+                }
+            }
+        }
+
+        // After all calc, set the init value
+        this.setData(bootData);
         // Once services created, add it to the services collection
         DataService.dataServicesInstances.push(this);
     }
@@ -66,7 +115,7 @@ export abstract class DataService<T> {
 
     /**
      * Force data hard refresh
-     * @returns THe new data
+     * @returns The new data
      */
     public async forceFetchData(): Promise<T> {
         try {
@@ -76,7 +125,7 @@ export abstract class DataService<T> {
             // Mark the flag as fetched
             this._fetchFlag = true;
             // Keep the data
-            this._data = dataResponse;
+            this.setData(dataResponse);
             // Publish the new data to the subscribers
             this._dataFeed.post(dataResponse);
             return dataResponse;
@@ -139,21 +188,18 @@ export abstract class DataService<T> {
      * @param data The new data
      */
     public postNewData(data: T) {
-        // First clone the object, to avoid issues in the react state when the object is the same prototype instance
-        // and to make sure the changes will do affect any component state
-        const clonedData = clonedeep(data);
         // Update and publish the new data
-        this._data = clonedData;
+        this.setData(data);
         this._fetchFlag = true;
         this._fetchStartedFlag = true;
-        this._dataFeed.post(clonedData);
+        this._dataFeed.post(clonedeep(data));
     }
 
     /**
      * Reset data and state
      */
     public reset() {
-        this._data = clonedeep(this._defaultData);
+        this.setData(this._defaultData);
         this._fetchFlag = false;
         this._fetchStartedFlag = false;
     }
@@ -164,6 +210,37 @@ export abstract class DataService<T> {
     public static resetAppData() {
         for (const dataServiceInstance of DataService.dataServicesInstances) {
             dataServiceInstance.reset();
+        }
+    }
+
+
+    /**
+     * Set service data
+     * @param data The data to set
+     */
+    private setData(data: T) {
+        // First clone the object, to avoid issues in the react state when the object is the same prototype instance
+        // and to make sure the changes will do affect any component state
+        this._data = clonedeep(data);
+        if (this._dataServiceOptions.localCacheMode !== LocalCacheMode.OFF) {
+            localStorage?.setItem?.(this.constructor.name, JSON.stringify(data));
+        }
+    }
+
+    /**
+     * Load data from local cache
+     * @returns The data or undefined if nothing cached
+     */
+    private loadFromCache() {
+        const rawData = localStorage?.getItem?.(this.constructor.name);
+        if (rawData === null) {
+            return undefined;
+        }
+        try {
+            const cachedData = JSON.parse(rawData);
+            return cachedData;
+        } catch (error) {
+            return undefined;
         }
     }
 }
