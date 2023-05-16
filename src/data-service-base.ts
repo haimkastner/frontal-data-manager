@@ -63,20 +63,20 @@ export abstract class DataService<T> {
 
         this._defaultData = defaultData;
 
-        // As default boot datas is the default data
+        // As default boot data is the default data
         let bootData = this._defaultData;
         // Start loading data sequence
         if (this._dataServiceOptions.localCacheMode !== LocalCacheMode.OFF) {
             const cachedData = this.loadFromCache();
             if (cachedData) {
                 bootData = cachedData;
+                this._loadFromCache = true;
                 if (this._dataServiceOptions.localCacheMode === LocalCacheMode.FULL) {
                     // If full mode only, mark data as fetched
                     this._fetchFlag = true;
                     this._fetchStartedFlag = true;
                 }
             }
-            this._loadFromCache = true;
         }
 
         // After all calc, set the init value

@@ -148,6 +148,14 @@ describe('# Data Service Boot Cache Tests', () => {
             done();
         });
     });
+
+    it('Should be mark as not from cache if cache is empty', async () => {
+        const anotherCacheService = new MyBootCacheService() as any;
+        expect(anotherCacheService._loadFromCache).equal(true);
+        localStorage.setItem(anotherCacheService.constructor.name as string, undefined as any);
+        const another2CacheService = new MyBootCacheService() as any;
+        expect(another2CacheService._loadFromCache).equal(false);
+    });
 });
 
 describe('# Data Service Tests', () => {
