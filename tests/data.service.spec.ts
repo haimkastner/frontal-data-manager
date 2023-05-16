@@ -53,7 +53,7 @@ class MyFullCacheService extends DataService<string> {
     constructor() {
         super(DEFAULT_VALUE, {
             localCacheMode: LocalCacheMode.FULL
-        }); 
+        });
     }
     async fetchData(): Promise<string> {
         const response = await axios.get('https://api.chucknorris.io/jokes/random');
@@ -64,7 +64,7 @@ export const myFullCacheService = new MyFullCacheService();
 
 class MyListService extends DataService<any[]> {
     constructor() {
-        super([]); 
+        super([]);
     }
     async fetchData(): Promise<any[]> {
         return ['item1'];
@@ -84,7 +84,7 @@ describe('# Data Service Full Cache Tests', () => {
         firstFetchedJoke = await myFullCacheService.getData();
         expect(firstFetchedJoke).not.equal(DEFAULT_VALUE);
         expect(myFullCacheService.data).equal(firstFetchedJoke);
-        expect(JSON.parse(localStorage.getItem(myFullCacheService.constructor.name) as string)).equal(firstFetchedJoke);
+        expect(JSON.parse(localStorage.getItem((myFullCacheService as any).getServiceCacheKey()) as string)).equal(firstFetchedJoke);
     });
 
     it('Should be initiated and mark as ready with the local cache', async () => {
@@ -95,10 +95,20 @@ describe('# Data Service Full Cache Tests', () => {
     });
 
     it('Should be initiated regularly is case of broken local cache', async () => {
-        localStorage.setItem(myFullCacheService.constructor.name as string, 'not a valid json at all');
+        localStorage.setItem((myFullCacheService as any).getServiceCacheKey(), 'not a valid json at all');
         const anotherFullCacheService = new MyFullCacheService();
         const thirdFetchedJoke = await anotherFullCacheService.getData();
         expect(thirdFetchedJoke).not.equal(DEFAULT_VALUE).not.equal(firstFetchedJoke);
+    });
+
+    it('Should remove local cache after data reset', async () => {
+        localStorage.setItem((myFullCacheService as any).getServiceCacheKey(), 'not a valid json at all');
+        const anotherFullCacheService = new MyFullCacheService();
+        anotherFullCacheService.reset();
+        expect(localStorage.getItem((myFullCacheService as any).getServiceCacheKey())).equal(null);
+        expect(localStorage.getItem((myFullCacheService as any).getServiceCacheKey()))
+            .not.equal(anotherFullCacheService.defaultData)
+            .not.equal(anotherFullCacheService.data);
     });
 });
 
@@ -114,24 +124,24 @@ describe('# Data Service Boot Cache Tests', () => {
         firstFetchedJoke = await myBootCacheService.getData();
         expect(firstFetchedJoke).not.equal(DEFAULT_VALUE);
         expect(myBootCacheService.data).equal(firstFetchedJoke);
-        expect(JSON.parse(localStorage.getItem(myBootCacheService.constructor.name) as string)).equal(firstFetchedJoke);
+        expect(JSON.parse(localStorage.getItem((myBootCacheService as any).getServiceCacheKey()) as string)).equal(firstFetchedJoke);
     });
 
     it('Should be initiated with cache but mark as not ready yet', async () => {
         const anotherFullCacheService = new MyBootCacheService();
         expect(anotherFullCacheService.data).not.equal(DEFAULT_VALUE);
         expect(anotherFullCacheService.data).equal(firstFetchedJoke);
-    
+
         const secondFetchedJoke = await anotherFullCacheService.getData();
         expect(secondFetchedJoke).not.equal(DEFAULT_VALUE).not.equal(firstFetchedJoke);
-        expect(JSON.parse(localStorage.getItem(myBootCacheService.constructor.name) as string)).equal(secondFetchedJoke);
+        expect(JSON.parse(localStorage.getItem((myBootCacheService as any).getServiceCacheKey()) as string)).equal(secondFetchedJoke);
     });
 
     it('Subscription to data feed should gives the cache and then the new data', (done) => {
         const anotherFullCacheService = new MyBootCacheService();
         let callsIndex = 0;
         const dataBeforeNewFetch = anotherFullCacheService.data;
-        const cacheData = JSON.parse(localStorage.getItem(anotherFullCacheService.constructor.name) as string);
+        const cacheData = JSON.parse(localStorage.getItem((myBootCacheService as any).getServiceCacheKey()) as string);
         anotherFullCacheService.attachDataSubs((value) => {
             callsIndex++;
 
@@ -152,7 +162,7 @@ describe('# Data Service Boot Cache Tests', () => {
     it('Should be mark as not from cache if cache is empty', async () => {
         const anotherCacheService = new MyBootCacheService() as any;
         expect(anotherCacheService._loadFromCache).equal(true);
-        localStorage.setItem(anotherCacheService.constructor.name as string, undefined as any);
+        localStorage.setItem((myBootCacheService as any).getServiceCacheKey(), undefined as any);
         const another2CacheService = new MyBootCacheService() as any;
         expect(another2CacheService._loadFromCache).equal(false);
     });

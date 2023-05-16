@@ -11,8 +11,9 @@ export enum LocalCacheMode {
 const localStorageMemoryMap = {} as any;
 if (!global.localStorage) {
     global.localStorage = {
-        getItem: (key: string) => localStorageMemoryMap[`DataService_${key}`] ?? null,
-        setItem: (key: string, value: string) => { localStorageMemoryMap[`DataService_${key}`] = value }
+        getItem: (key: string) => localStorageMemoryMap[key] ?? null,
+        removeItem: (key: string) => { delete localStorageMemoryMap[key] },
+        setItem: (key: string, value: string) => { localStorageMemoryMap[key] = value }
     } as any;
 }
 
@@ -213,6 +214,7 @@ export abstract class DataService<T> {
      */
     public reset() {
         this.setData(this._defaultData);
+        localStorage?.removeItem?.(this.getServiceCacheKey());
         this._fetchFlag = false;
         this._fetchStartedFlag = false;
         this._loadFromCache = false;
@@ -227,6 +229,12 @@ export abstract class DataService<T> {
         }
     }
 
+    /**
+     * Get service instance type cache key
+     */
+    private getServiceCacheKey() {
+        return `DataService_${this.constructor.name}`;
+    }
 
     /**
      * Set service data
@@ -237,7 +245,7 @@ export abstract class DataService<T> {
         // and to make sure the changes will do affect any component state
         this._data = clonedeep(data);
         if (this._dataServiceOptions.localCacheMode !== LocalCacheMode.OFF) {
-            localStorage?.setItem?.(this.constructor.name, JSON.stringify(data));
+            localStorage?.setItem?.(this.getServiceCacheKey(), JSON.stringify(data));
         }
     }
 
@@ -246,7 +254,7 @@ export abstract class DataService<T> {
      * @returns The data or undefined if nothing cached
      */
     private loadFromCache() {
-        const rawData = localStorage?.getItem?.(this.constructor.name);
+        const rawData = localStorage?.getItem?.(this.getServiceCacheKey());
         if (rawData === null) {
             return undefined;
         }
