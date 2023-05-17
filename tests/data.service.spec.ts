@@ -62,6 +62,17 @@ class MyFullCacheService extends DataService<string> {
 }
 export const myFullCacheService = new MyFullCacheService();
 
+class MyCustomKeyCacheService extends DataService<string> {
+    constructor(cacheKey: string | undefined) {
+        super(DEFAULT_VALUE, {
+            cacheKey,
+            localCacheMode: LocalCacheMode.FULL,
+        });
+    }
+    async fetchData(): Promise<string> {
+        return 'the data';
+    }
+}
 class MyListService extends DataService<any[]> {
     constructor() {
         super([]);
@@ -109,6 +120,20 @@ describe('# Data Service Full Cache Tests', () => {
         expect(localStorage.getItem((myFullCacheService as any).getServiceCacheKey()))
             .not.equal(anotherFullCacheService.defaultData)
             .not.equal(anotherFullCacheService.data);
+    });
+
+    it('Should use cache key for local cache', async () => {
+        const defaultKeyCacheService = new MyCustomKeyCacheService(undefined);
+        const key = 'Custom_Key'
+        const explicitKeyCacheService = new MyCustomKeyCacheService(key);
+        const otherKey = 'Custom_Key'
+        const otherExplicitKeyCacheService = new MyCustomKeyCacheService(otherKey);
+        expect((defaultKeyCacheService as any).getServiceCacheKey())
+            .not.equal((explicitKeyCacheService as any).getServiceCacheKey())
+            .not.equal((otherExplicitKeyCacheService as any).getServiceCacheKey());
+
+        const anotherDefaultKeyCacheService = new MyCustomKeyCacheService(undefined);
+        expect((defaultKeyCacheService as any).getServiceCacheKey()).equal((anotherDefaultKeyCacheService as any).getServiceCacheKey());
     });
 });
 

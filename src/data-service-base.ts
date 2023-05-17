@@ -26,11 +26,15 @@ export interface DataServiceOptions {
      * The cache is common to all instances of a class type inherits from @see DataService
      */
     localCacheMode?: LocalCacheMode;
+
+    /**
+     * In case of activating cache, use this key as data key, as default the key is the service name.
+     */
+    cacheKey?: string;
 }
 
 /** Implementation of base class for common data fetch and publish as event logic */
 export abstract class DataService<T> {
-
     /**
      * Collection of all services instances, used to allow forcing reset refetch and so on for all app data
      */
@@ -154,7 +158,7 @@ export abstract class DataService<T> {
     public async attachDataSubs(callback: (data: T) => void): Promise<() => void> {
         // Add the callback to the feed event
         const detacher = this._dataFeed.attach(callback);
-        
+
         if (this._loadFromCache) {
             // Load in the data in the *background* if not yet triggered
             if (!this._fetchStartedFlag) {
@@ -233,7 +237,7 @@ export abstract class DataService<T> {
      * Get service instance type cache key
      */
     private getServiceCacheKey() {
-        return `DataService_${this.constructor.name}`;
+        return `DataService_${this._dataServiceOptions.cacheKey || this.constructor.name}`;
     }
 
     /**
